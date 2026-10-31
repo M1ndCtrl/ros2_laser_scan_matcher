@@ -364,7 +364,11 @@ bool LaserScanMatcher::processScan(LDP& curr_ldp_scan, const rclcpp::Time& time)
 
   tf2::Transform pr_ch_l;
 
-  double dt = (now() - last_icp_time_).nanoseconds()/1e+9;
+  double dt = (time - last_icp_time_).seconds();
+  if (dt <= 0.0)
+  {
+    return false;
+  }
   double pr_ch_x, pr_ch_y, pr_ch_a;
   
 
@@ -453,6 +457,10 @@ bool LaserScanMatcher::processScan(LDP& curr_ldp_scan, const rclcpp::Time& time)
     odom_msg.twist.twist.linear.y = pose_difference.getOrigin().getY()/dt;
     odom_msg.twist.twist.angular.z = tf2::getYaw(pose_difference.getRotation())/dt;
 
+    odom_msg.twist.covariance[0]  = 0.05;
+    odom_msg.twist.covariance[7]  = 0.05;
+    odom_msg.twist.covariance[35] = 0.1;
+
     prev_f2b_ = f2b_;
 
     odom_publisher_->publish(odom_msg);
@@ -491,7 +499,7 @@ bool LaserScanMatcher::processScan(LDP& curr_ldp_scan, const rclcpp::Time& time)
     ld_free(curr_ldp_scan);
 
   }
-  last_icp_time_ = now();
+  last_icp_time_ = time;
   return true;
 }
 
